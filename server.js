@@ -143,6 +143,7 @@ const server = http.createServer(async (request, response) => {
   catch { response.writeHead(404, { "content-type": "text/plain; charset=utf-8" }); response.end("Not found"); }
 });
 
-server.listen(PORT, "127.0.0.1", () => console.log(`Small Web Reader running at http://127.0.0.1:${PORT}`));
+if (require.main === module) server.listen(PORT, "127.0.0.1", () => console.log(`Small Web Reader running at http://127.0.0.1:${PORT}`));
+module.exports = { fetchSafely, normalizeFeedUrl };
 let readNextQueue = Promise.resolve();
 function updateReadNext(action) { const result = readNextQueue.then(action); readNextQueue = result.catch(() => {}); return result; }

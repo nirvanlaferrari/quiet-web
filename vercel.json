@@ -1,0 +1,8 @@
+{
+  "framework": null,
+  "buildCommand": "node scripts/build-vercel.cjs",
+  "outputDirectory": "public",
+  "functions": { "api/router.js": { "maxDuration": 60 } },
+  "rewrites": [{ "source": "/api/:path*", "destination": "/api/router?route=:path*" }],
+  "headers": [{ "source": "/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] }]
+}
