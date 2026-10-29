@@ -410,11 +410,21 @@ function cardFor(story) {
     else document.querySelector(`#${viewId} .save-button, #${viewId} .filter.active, .nav-link.active`)?.focus({ preventScroll: true });
   });
   tpl.querySelector(".read-story").addEventListener("click", () => openArticle(story));
+  const toggleRead = document.createElement("button"); toggleRead.className = "read-state-toggle";
+  toggleRead.textContent = story.unread ? "Mark read" : "Mark unread";
+  toggleRead.setAttribute("aria-label",`${toggleRead.textContent}: ${story.title}`);
+  toggleRead.onclick = () => {
+    const view = card.closest(".view")?.id;
+    story.unread = !story.unread; persist(); render();
+    const replacement = [...document.querySelectorAll(`#${view} .story-card`)].find(node=>node.dataset.id===String(story.id));
+    (replacement?.querySelector(".read-state-toggle") || document.querySelector(".filter.active"))?.focus({preventScroll:true});
+  };
+  card.append(toggleRead);
   card.addEventListener("click", event => { if (!event.target.closest("button")) openArticle(story); });
   return tpl;
 }
 function renderStories() {
-  const visible = stories.filter(s => (!selectedFeed || s.feed === selectedFeed) && (currentFilter === "all" || (currentFilter === "unread" ? s.unread : s.saved)));
+  const visible = stories.filter(s => (!selectedFeed || s.feed === selectedFeed) && (currentFilter === "all" || (currentFilter === "unread" ? s.unread : s.saved))).sort((a,b)=>(b.publishedAt||0)-(a.publishedAt||0));
   storyList.innerHTML = "";
   if (!visible.length) {
     const empty = document.createElement("div"); empty.className = "empty";
@@ -523,11 +533,21 @@ function firstText(element, selectors) { for (const selector of selectors) { con
 function formatStoryDate(value) { const date = new Date(value); if (Number.isNaN(date.getTime())) return "Recently"; const delta = Date.now() - date.getTime(); if (delta < 86400000) return `${Math.max(1, Math.round(delta / 3600000))}h ago`; return date.toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
 function feedColor(name) { const palette = ["#ff7b58", "#6c8bf4", "#d2ac43", "#76b68b", "#8067d7"]; return palette[[...name].reduce((total, character) => total + character.charCodeAt(0), 0) % palette.length]; }
 async function proxyFetch(url, options = {}) {
-  const response = await fetch(`/api/fetch?raw=1&url=${encodeURIComponent(url)}`,{signal:options.signal});
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  options.signal?.addEventListener("abort",cancel,{once:true});
+  if(options.signal?.aborted)controller.abort();
+  const timeout = setTimeout(cancel,20000);
+  try {
+  const response = await fetch(`/api/fetch?raw=1&url=${encodeURIComponent(url)}`,{signal:controller.signal});
   if(response.ok && response.headers.has("x-quiet-web-url")) return {url:decodeURIComponent(response.headers.get("x-quiet-web-url")),contentType:decodeURIComponent(response.headers.get("x-quiet-web-type")||""),body:await response.text()};
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || "Could not fetch this website.");
   return payload;
+  } catch(error) {
+    if(error.name === "AbortError" && !options.signal?.aborted)throw new Error("This website took too long to respond. Your existing stories are safe; please retry.");
+    throw error;
+  } finally { clearTimeout(timeout); options.signal?.removeEventListener("abort",cancel); }
 }
 function parseFeed(body, sourceUrl) {
   const xml = new DOMParser().parseFromString(body, "application/xml");
@@ -537,6 +557,7 @@ function parseFeed(body, sourceUrl) {
   const isAtom = root === "feed";
   const title = firstText(xml, isAtom ? ["feed > title"] : ["channel > title"]) || new URL(sourceUrl).hostname.replace(/^www\./, "");
   const entries = [...xml.querySelectorAll(isAtom ? "entry" : "item")].slice(0, 25).map((entry, index) => {
+    try {
     const link = isAtom ? [...entry.querySelectorAll("link")].find(item => item.getAttribute("href") && (!item.getAttribute("rel") || item.getAttribute("rel") === "alternate"))?.getAttribute("href") : firstText(entry, ["link"]);
     const fullContent = firstText(entry,isAtom ? ["content"] : ["content\\:encoded"]);
     const rawSummary = firstText(entry, isAtom ? ["summary", "content"] : ["description", "content\\:encoded"]);
@@ -545,7 +566,14 @@ function parseFeed(body, sourceUrl) {
     const paragraphs = contentDoc ? [...contentDoc.querySelectorAll("p")].map(p=>cleanText(p.textContent)).filter(Boolean) : [];
     if(contentDoc && !paragraphs.length && cleanText(contentDoc.body.textContent)) paragraphs.push(cleanText(contentDoc.body.textContent));
     return { id: `${sourceUrl}#${firstText(entry, isAtom ? ["id", "link"] : ["guid", "link"])}-${index}`, sourceId:firstText(entry,isAtom ? ["id"] : ["guid"]), feed: title, color: feedColor(title), date: formatStoryDate(firstText(entry, isAtom ? ["updated", "published"] : ["pubDate", "dc\\:date"])), title: firstText(entry, ["title"]) || "Untitled story", summary: summary.slice(0, 230), body: paragraphs.length ? paragraphs : [summary], fullText:paragraphs.length>0, url: link ? new URL(link, sourceUrl).toString() : sourceUrl, unread: true, saved: false };
-  }).filter(item => item.title !== "Untitled story");
+    } catch { return null; }
+  }).filter(item => item && item.title !== "Untitled story");
+  const originalEntries = [...xml.querySelectorAll(isAtom ? "entry" : "item")].slice(0,25);
+  entries.forEach(item=>{
+    const index = Number(item.id.slice(item.id.lastIndexOf("-")+1));
+    const raw = firstText(originalEntries[index],isAtom ? ["published","updated"] : ["pubDate","dc\\:date"]);
+    const timestamp = Date.parse(raw); item.publishedAt = Number.isFinite(timestamp) ? timestamp : 0;
+  });
   if (/wordpress/i.test(firstText(xml, ["generator"]))) entries.forEach(entry => { entry.platform = "WordPress"; });
   return entries.length ? { title, entries } : null;
 }
