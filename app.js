@@ -523,7 +523,8 @@ function firstText(element, selectors) { for (const selector of selectors) { con
 function formatStoryDate(value) { const date = new Date(value); if (Number.isNaN(date.getTime())) return "Recently"; const delta = Date.now() - date.getTime(); if (delta < 86400000) return `${Math.max(1, Math.round(delta / 3600000))}h ago`; return date.toLocaleDateString(undefined, { month: "short", day: "numeric" }); }
 function feedColor(name) { const palette = ["#ff7b58", "#6c8bf4", "#d2ac43", "#76b68b", "#8067d7"]; return palette[[...name].reduce((total, character) => total + character.charCodeAt(0), 0) % palette.length]; }
 async function proxyFetch(url, options = {}) {
-  const response = await fetch(`/api/fetch?url=${encodeURIComponent(url)}`,{signal:options.signal});
+  const response = await fetch(`/api/fetch?raw=1&url=${encodeURIComponent(url)}`,{signal:options.signal});
+  if(response.ok && response.headers.has("x-quiet-web-url")) return {url:decodeURIComponent(response.headers.get("x-quiet-web-url")),contentType:decodeURIComponent(response.headers.get("x-quiet-web-type")||""),body:await response.text()};
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || "Could not fetch this website.");
   return payload;

@@ -116,7 +116,14 @@ const server = http.createServer(async (request, response) => {
   if (requestUrl.pathname.startsWith("/data/")) return sendJson(response, 403, { error: "Private application data." });
   if (requestUrl.pathname === "/api/fetch") {
     if (request.method !== "GET") return sendJson(response, 405, { error: "Method not allowed." });
-    try { return sendJson(response, 200, await fetchSafely(requestUrl.searchParams.get("url") || "")); }
+    try {
+      const result = await fetchSafely(requestUrl.searchParams.get("url") || "");
+      if(requestUrl.searchParams.get("raw") === "1") {
+        response.writeHead(200,{"content-type":"text/plain; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","x-quiet-web-url":encodeURIComponent(result.url),"x-quiet-web-type":encodeURIComponent(result.contentType)});
+        return response.end(result.body);
+      }
+      return sendJson(response,200,result);
+    }
     catch (error) { return sendJson(response, 400, { error: error.message || "Could not fetch this URL." }); }
   }
   if (requestUrl.pathname === "/api/discovery/submit") {
