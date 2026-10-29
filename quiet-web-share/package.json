@@ -1,0 +1,12 @@
+{
+  "name": "small-web-reader",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check app.js && node --check server.js"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0"
+  }
+}

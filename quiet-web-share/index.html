@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0e100f" />
+    <script src="theme.js?v=1"></script>
+    <title>Quiet Web</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=motion-3" />
+    <link rel="stylesheet" href="theme.css?v=1" />
+    <link rel="stylesheet" href="entry.css?v=1" />
+  </head>
+  <body>
+    <section id="entry-page" aria-label="Welcome to Quiet Web">
+      <div class="entry-hero">
+        <canvas id="gateway-flow" aria-hidden="true"></canvas>
+        <nav class="entry-nav" aria-label="Welcome navigation"><a class="brand" href="?reader"><span class="brand-mark">qw</span>quiet web</a><a href="#entry-features">Explore the features ↘</a></nav>
+        <div class="entry-intro">
+          <p class="eyebrow">A little less noise. A lot more curiosity.</p>
+          <h1>The internet.<br><em>At your pace.</em></h1>
+          <p class="entry-description">Bring your favorite independent blogs together in one quiet place. Follow good writing. Save what matters. Read on your terms.</p>
+          <a class="entry-cta" href="?reader">Open your reader <span>↗</span></a>
+          <p class="entry-note">No account needed · Your reading library stays on this device</p>
+        </div>
+        <div class="entry-bottom"><span>MADE FOR THE SMALL WEB</span><a href="#entry-features">A closer look ↓</a><span>READ WITH INTENTION</span></div>
+      </div>
+      <section id="entry-features" class="entry-features" aria-labelledby="features-title">
+        <p class="eyebrow">Less friction, more reading</p><h2 id="features-title">A home for your curiosity.</h2>
+        <div class="entry-feature-grid">
+          <article><span>01 / FOLLOW</span><h3>Your blogs, together.</h3><p>Paste a blog address or direct RSS/Atom feed. Import a feed file from your computer, too.</p></article>
+          <article><span>02 / FOCUS</span><h3>Room to read.</h3><p>A full-screen reading view with comfortable typography and a progress line. Full article extraction depends on the source website.</p></article>
+          <article><span>03 / KEEP</span><h3>Good reads, saved.</h3><p>Bookmark stories for later. Previously loaded article text and imported summaries are stored locally for reading offline while the app is open.</p></article>
+          <article><span>04 / ORGANIZE</span><h3>A calmer timeline.</h3><p>Filter by blog, unread stories, or saved favorites. Find your next read without losing your place.</p></article>
+          <article><span>05 / DISCOVER</span><h3>Follow your curiosity.</h3><p>Explore starter blogs, with optional anonymous feed-list sharing to suggest blogs from overlapping subscriptions.</p></article>
+          <article><span>06 / MAKE IT YOURS</span><h3>Your kind of quiet.</h3><p>Switch between warm paper and midnight themes, with gentle motion you can turn off anytime.</p></article>
+        </div>
+        <a class="entry-cta" href="?reader">Find your next good read <span>↗</span></a>
+        <footer>qw / Quiet Web <span>A quieter corner of the internet.</span></footer>
+      </section>
+    </section>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#home" aria-label="Quiet Web home">
+          <span class="brand-mark">qw</span>
+          <span>quiet web</span>
+        </a>
+        <nav class="nav" aria-label="Main navigation">
+          <button class="nav-link active" data-view="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M5 12h10M5 19h12"/></svg>Timeline</button>
+          <button class="nav-link" data-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m16 8-2 6-6 2 2-6Z"/></svg>Discover <i>3</i></button>
+          <button class="nav-link" data-view="library"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h5v16H5ZM14 4l5-1 3 16-5 1Z"/></svg>Library</button>
+        </nav>
+        <section class="sidebar-section">
+          <div class="section-label"><span>Your feeds</span><button id="add-feed-small" aria-label="Add a feed">+</button></div>
+          <div id="feed-list" class="feed-list"></div>
+        </section>
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+          <span id="sync-status">All saved locally</span>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="eyebrow">Tuesday, October 29</p>
+            <h1 id="page-title">Your quiet corner of the web.</h1>
+          </div>
+          <div class="top-actions">
+            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Dark theme" aria-pressed="true">Dark theme</button>
+            <select id="motion-preference" class="motion-preference" aria-label="Animation preference">
+              <option value="system">Motion: auto</option>
+              <option value="on">Motion: on</option>
+              <option value="off">Motion: off</option>
+            </select>
+            <button id="offline-button" class="offline-pill" aria-pressed="false"><span></span>Online</button>
+            <button id="add-feed" class="primary-button">Add a blog <b>+</b></button>
+          </div>
+        </header>
+
+        <section id="home-view" class="view active" aria-label="Timeline">
+          <div class="filter-row">
+            <button class="filter active" data-filter="all">All stories <span id="story-count">7</span></button>
+            <button class="filter" data-filter="unread">Unread <span id="unread-count">5</span></button>
+            <button class="filter" data-filter="saved">Saved</button>
+            <button id="mark-read" class="text-button">Mark all as read</button>
+          </div>
+          <div id="story-list" class="story-list"></div>
+        </section>
+
+        <section id="discover-view" class="view" aria-label="Discover blogs">
+          <div class="discover-intro">
+            <p class="eyebrow">A human-scale web</p>
+            <h2>Good writing travels by word of mouth.</h2>
+            <p>Suggestions are based on overlapping reading lists, never a personal profile.</p>
+            <label class="privacy-choice"><input id="discovery-opt-in" type="checkbox" /> <span>Share my feed list anonymously to improve discovery.</span></label>
+            <p id="discovery-status" class="helper-text"></p>
+          </div>
+          <div id="discover-list" class="discover-list"></div>
+        </section>
+
+        <section id="library-view" class="view" aria-label="Saved stories">
+          <div class="library-intro">
+            <p class="eyebrow">Your shelf</p>
+            <h2>Saved for a slower moment.</h2>
+          </div>
+          <div id="saved-list" class="story-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="feed-dialog">
+      <form id="feed-form">
+        <button class="close-dialog" id="close-feed-dialog" type="button" aria-label="Close">×</button>
+        <p class="eyebrow">Build your library</p>
+        <h2>Add an independent blog</h2>
+        <p class="dialog-copy">Paste a website or feed URL, or add an RSS/Atom/XML feed file from your computer. Your reading cache stays on this device.</p>
+        <label for="feed-url">Your blog or feed link</label>
+        <input id="feed-url" name="feed-url" type="text" inputmode="url" placeholder="medium.com/@writer or any blog address" />
+        <p class="helper-text">Add any public blog with RSS or Atom. Medium profiles, Blogspot blogs, WordPress sites, and direct feed links are supported.</p>
+        <div class="or-divider"><span>or</span></div>
+        <label for="feed-file">RSS / Atom file</label>
+        <input id="feed-file" name="feed-file" type="file" accept=".rss,.atom,.xml,application/rss+xml,application/atom+xml,text/xml,application/xml" />
+        <p id="feed-status" class="dialog-status" role="status"></p>
+        <button id="feed-submit" class="primary-button wide" type="submit">Add to reader <b>→</b></button>
+      </form>
+    </dialog>
+
+    <dialog id="article-dialog" class="article-dialog">
+      <article id="article-content"></article>
+    </dialog>
+
+    <template id="story-template">
+      <article class="story-card">
+        <div class="story-meta"><span class="feed-dot"></span><span class="feed-name"></span><time></time></div>
+        <div class="story-body">
+          <div><h2></h2><p></p></div>
+          <button class="save-button" aria-label="Save story">♡</button>
+        </div>
+        <button class="read-story">Read story <span>→</span></button>
+      </article>
+    </template>
+    <script src="node_modules/gsap/dist/gsap.min.js"></script>
+    <script src="entry.js?v=1"></script>
+    <script src="app.js?v=entry-1"></script>
+  </body>
+</html>
