@@ -51,7 +51,7 @@
     const button=event.target; button.disabled=true; button.textContent="Saving…";
     try {
       if(!story.fullText){if(!online())throw Error("Connect once to download this article.");const response=await proxyFetch(story.url);const article=window.ReaderContent.extract(response.body,response.url);if(!article)throw Error("This publisher did not expose readable article text.");story.body=article.paragraphs;story.articleHtml=article.html;story.fullText=true;}
-      story.offlineSaved=true; persist(); await readerCache.save({stories,feeds,subscriptionUrls});
+      story.offlineSaved=true; if(!await persist()){story.offlineSaved=false;throw Error("Browser storage is unavailable. This article was not saved offline.");}
       if(dialog.open && activeArticleId===story.id)renderArticle(story);
     } catch(error){button.disabled=false;button.textContent="Retry offline save";document.getElementById("offline-article-status").textContent=error.message;}
   });

@@ -16,9 +16,13 @@ const starterRecommendations = [
 ];
 
 let recommendations = [...starterRecommendations];
-let stories = JSON.parse(localStorage.getItem("small-web-stories")) || [];
-let feeds = JSON.parse(localStorage.getItem("small-web-feeds")) || [];
-let demoArchive = JSON.parse(localStorage.getItem("quiet-web-demo-archive")) || [];
+let readerLocal;try{readerLocal=window.localStorage;}catch{readerLocal={getItem:()=>null,setItem(){throw Error("Storage unavailable");}};}
+function readPreference(key){try{return readerLocal.getItem(key);}catch{return null;}}
+const durableReader = window.createReaderStorage({local:readerLocal,indexed:window.indexedDB,onStatus:status=>{if(status==="failed")$("#sync-status").textContent="Storage unavailable—changes may not survive reload";else if(status==="local-only")$("#sync-status").textContent="Saved in local browser storage";}});
+let stories = durableReader.initial.stories;
+let feeds = durableReader.initial.feeds;
+function readStoredArray(key){try{const data=JSON.parse(localStorage.getItem(key));return Array.isArray(data)?data:[];}catch{return [];}}
+let demoArchive = readStoredArray("quiet-web-demo-archive");
 function archiveDemoStories() {
   const isDemo = story => !story.url && !story.feedUrl && seedStories.some(seed => seed.id === story.id && seed.title === story.title);
   const demos = stories.filter(isDemo);
@@ -27,7 +31,7 @@ function archiveDemoStories() {
   seedStories.forEach(story => { if (!archive.has(story.id)) archive.set(story.id, { ...story }); });
   demos.forEach(story => archive.set(story.id, story));
   demoArchive = [...archive.values()];
-  localStorage.setItem("quiet-web-demo-archive", JSON.stringify(demoArchive));
+  try {localStorage.setItem("quiet-web-demo-archive", JSON.stringify(demoArchive));} catch {}
   stories = stories.filter(story => !isDemo(story));
   const demoFeeds = new Set(seedStories.map(story => story.feed));
   feeds = feeds.filter(feed => !demoFeeds.has(feed) || stories.some(story => story.feed === feed));
@@ -35,12 +39,12 @@ function archiveDemoStories() {
 }
 let currentFilter = "all";
 let selectedFeed = null;
-let favouriteFeeds = JSON.parse(localStorage.getItem("quiet-web-favourite-feeds")) || [];
+let favouriteFeeds = readStoredArray("quiet-web-favourite-feeds");
 function saveFavourites() { localStorage.setItem("quiet-web-favourite-feeds", JSON.stringify(favouriteFeeds)); }
 let isOffline = false;
-let subscriptionUrls = JSON.parse(localStorage.getItem("small-web-subscriptions")) || [];
-let discoveryOptIn = localStorage.getItem("small-web-discovery-opt-in") === "true";
-let readNextOptIn = localStorage.getItem("quiet-web-read-next") === "true";
+let subscriptionUrls = durableReader.initial.subscriptionUrls;
+let discoveryOptIn = readPreference("small-web-discovery-opt-in") === "true";
+let readNextOptIn = readPreference("quiet-web-read-next") === "true";
 let lastReadFeed = null;
 let readNextRequest = 0;
 try { localStorage.removeItem("quiet-web-contributor"); } catch {}
@@ -125,7 +129,7 @@ async function updateReadNext(story) {
 const $ = (selector) => document.querySelector(selector);
 const storyList = $("#story-list");
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-let motionPreference = localStorage.getItem("small-web-motion") || "system";
+let motionPreference = readPreference("small-web-motion") || "system";
 function motionEnabled() { return motionPreference === "on" || (motionPreference !== "off" && !reducedMotion.matches); }
 let titleTyping;
 function typePageTitle(text) {
@@ -280,13 +284,8 @@ function applyMotionPreference() {
 }
 reducedMotion.addEventListener("change", applyMotionPreference);
 
-const readerCache = {
-  open() { return new Promise((resolve, reject) => { const request = indexedDB.open("small-web-reader", 1); request.onupgradeneeded = () => request.result.createObjectStore("state"); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); }); },
-  async save(state) { const db = await this.open(); return new Promise((resolve, reject) => { const transaction = db.transaction("state", "readwrite"); transaction.objectStore("state").put(state, "reader"); transaction.oncomplete = resolve; transaction.onerror = () => reject(transaction.error); }); },
-  async load() { const db = await this.open(); return new Promise((resolve, reject) => { const request = db.transaction("state").objectStore("state").get("reader"); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); }); }
-};
-
-function persist() { localStorage.setItem("small-web-stories", JSON.stringify(stories)); localStorage.setItem("small-web-feeds", JSON.stringify(feeds)); localStorage.setItem("small-web-subscriptions", JSON.stringify(subscriptionUrls)); readerCache.save({ stories, feeds, subscriptionUrls }).catch(() => {}); }
+const readerCache = durableReader;
+function persist() { return durableReader.save({stories,feeds,subscriptionUrls}); }
 function counts() { return { unread: stories.filter(s => s.unread).length, saved: stories.filter(s => s.saved).length }; }
 function feedDisplayName(feed, story = null) {
   const entries = story ? [story] : stories.filter(item => item.feed === feed);
@@ -516,7 +515,7 @@ async function openArticle(story) {
   articleClosing = false;
   articleMotion?.kill();
   story.unread = false; persist(); render();
-  const shouldFetch=Boolean(story.url && !story.articleHtml && !story.localOnly && !isOffline);
+  const shouldFetch=Boolean(story.url && !story.articleHtml && !story.localOnly && !isOffline && navigator.onLine);
   renderArticle(story, shouldFetch && !story.fullText); $("#article-dialog").showModal();
   articleDialog.scrollTop = 0;
   if (window.gsap && motionEnabled()) {
@@ -738,7 +737,10 @@ $("#feed-form").addEventListener("submit", async event => {
   finally { submit.disabled = false; }
 });
 async function hydrateReader() {
-  try { const cached = await readerCache.load(); if (cached?.stories?.length) { stories = cached.stories; feeds = cached.feeds || feeds; subscriptionUrls = cached.subscriptionUrls || subscriptionUrls; } } catch { /* localStorage remains the fallback cache */ }
+  const startingRevision=durableReader.revision;
+  // First paint is synchronous from local storage, before IndexedDB or any fetch.
+  render(); renderDiscover();
+  try { const cached = await readerCache.load(); if(cached && durableReader.revision===startingRevision && (Number(cached.updatedAt)||0)>=(Number(durableReader.initial.updatedAt)||0)) { stories=cached.stories;feeds=cached.feeds;subscriptionUrls=cached.subscriptionUrls;durableReader.adoptRevision(cached.updatedAt); } } catch { /* the instant local snapshot remains usable */ }
   archiveDemoStories();
   $("#discovery-opt-in").checked = discoveryOptIn;
   render(); renderDiscover();

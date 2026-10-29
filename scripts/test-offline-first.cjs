@@ -1,0 +1,21 @@
+const assert=require("node:assert/strict"),{IDBFactory}=require("fake-indexeddb"),createStorage=require("../reader-storage.js");
+const storage=()=>{const rows=new Map();return{getItem:key=>rows.get(key)??null,setItem:(key,value)=>rows.set(key,String(value)),removeItem:key=>rows.delete(key)};};
+(async()=>{
+ const local=storage(),indexed=new IDBFactory();
+ const one=createStorage({local,indexed});
+ const state={stories:[{id:"post",unread:false,saved:true,body:["Complete article text"],articleHtml:"<p>Complete article text</p>",highlights:[{color:"orange"}],offlineSaved:true}],feeds:["Publisher"],subscriptionUrls:["https://publisher.example/feed"]};
+ assert.equal(await one.save(state),true);
+ const two=createStorage({local,indexed});
+ assert.equal(two.initial.stories[0].unread,false);assert.equal(two.initial.stories[0].articleHtml,state.stories[0].articleHtml);
+ assert.equal((await two.load()).stories[0].offlineSaved,true);
+ const first=two.save({...state,stories:[{...state.stories[0],unread:true}]});
+ const second=two.save({...state,stories:[{...state.stories[0],unread:false}]});
+ await Promise.all([first,second]);assert.equal((await two.load()).stories[0].unread,false);
+ await two.save({stories:[],feeds:[],subscriptionUrls:[]});assert.equal((await two.load()).stories.length,0);
+ const quota={getItem:()=>null,setItem(){throw Error("Quota exceeded");}};
+ const fallback=createStorage({local:quota,indexed});assert.equal(await fallback.save(state),true);assert.equal((await fallback.load()).stories[0].articleHtml,state.stories[0].articleHtml);
+ const noStorage=createStorage({local:quota,indexed:null});assert.equal(await noStorage.save(state),false);
+ const corrupt=storage();corrupt.setItem("quiet-web-reader-state","broken JSON");assert.equal(createStorage({local:corrupt,indexed}).initial.stories.length,0);
+ const recovered=createStorage({local:storage(),indexed});assert.equal((await recovered.load()).stories[0].saved,true);
+ console.log("PASS: instant snapshot, cross-session article/read-state persistence, ordered writes, empty-library persistence, quota fallback, total-storage failure, corrupt snapshot recovery");
+})().catch(error=>{console.error(error);process.exitCode=1;});

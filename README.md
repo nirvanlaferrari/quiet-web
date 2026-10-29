@@ -20,6 +20,11 @@ Accepts: determined Sybil attackers can obtain fresh tokens from different netwo
 Stored discovery vote hashes are scoped to a feed pairing and single-use request nonce; they are not reusable client IDs. Replay records expire logically after five minutes and are pruned on subsequent consumption. Existing privacy-sensitive discovery data must be removed using migration 002. Do not claim this app provides cryptographic anonymity or unique-human counts.
 
 ## Checks
+
+## Offline-first behavior
+The timeline renders synchronously from a versioned local snapshot before waiting for IndexedDB/network. Articles, sanitized reading HTML, read/saved state and annotations are persisted to IndexedDB and localStorage. IndexedDB writes are serialized and snapshots carry monotonic revisions so old loads/writes cannot replace newer changes. Empty libraries persist too. The app shell and reading dependencies are cached by service worker after one successful online visit; offline article images/fonts are not guaranteed, but downloaded text remains available. Browser clearing/evicting storage cannot be prevented. When both stores fail, the app warns and offline-save does not claim success.
+
+While the app is open, online and visible, cached subscriptions refresh periodically with timeouts/backoff. Refresh merges posts without replacing active story objects, read state, saved state or highlights. Previously downloaded full text is retained. No API content is cached server-side. Use `node scripts/test-offline-first.cjs` and `node scripts/test-feed-refresh.cjs` for storage/refresh regression checks. Real browser service-worker offline reload still needs a deployment-level acceptance test.
 `npm.cmd run check`, `node scripts/test-ranking.cjs`, `node scripts/test-discovery-security.cjs`, `node scripts/test-reader-extraction.cjs`.
 
 Deploy by uploading all source files and folders, including lib/discovery-security.cjs and the migrations. Set environment secrets directly in Vercel, never in frontend code/Git. The existing Supabase service key also acts as server-side signing salt through a domain-separated HMAC; rotating it invalidates pending tokens. No additional frontend key is required. Frontend offline caches and highlighted articles remain device-local.
