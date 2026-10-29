@@ -1,0 +1,10 @@
+node_modules/
+public/
+data/
+outputs/
+.env*
+!.env.example
+.vercel/
+hosted-quiet-web/.sites-runtime/
+hosted-quiet-web/.wrangler/
+hosted-quiet-web/dist/

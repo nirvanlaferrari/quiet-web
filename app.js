@@ -483,6 +483,11 @@ function renderArticle(story, loading = false) {
   if (activeArticleId !== story.id || articleClosing) return;
   $("#article-content").innerHTML = `<button class="article-close" aria-label="Close article">×</button><p class="eyebrow">${escapeHtml(story.feed)} · ${escapeHtml(story.date)}</p><h1>${escapeHtml(story.title)}</h1><div class="article-copy">${loading ? "<p>Opening the clean reading view…</p>" : story.body.map(p => `<p>${escapeHtml(p)}</p>`).join("")}</div>`;
   $(".article-close").textContent = "← Back to your reader";
+  if (!loading && story.articleHtml) {
+    const sanitized = window.ReaderContent?.sanitize(story.articleHtml);
+    if(sanitized) $("#article-content .article-copy").innerHTML = sanitized;
+  }
+  if(!loading && story.readingNotice) { const note=document.createElement("p");note.className="helper-text";note.textContent=story.readingNotice;$("#article-content .article-copy").before(note); }
   $("#article-content .eyebrow").textContent = `${feedDisplayName(story.feed, story)} · ${story.date}`;
   if (!story.localOnly && /^https?:/i.test(story.feedUrl || "")) {
     const label = document.createElement("span"); label.className = "blog-view-count";
@@ -495,10 +500,7 @@ function renderArticle(story, loading = false) {
   requestAnimationFrame(updateReadingProgress);
 }
 function extractArticleText(html) {
-  const document = new DOMParser().parseFromString(html, "text/html");
-  document.querySelectorAll("script, style, nav, footer, header, aside, form, iframe, noscript").forEach(node => node.remove());
-  const root = document.querySelector("article") || document.querySelector("main") || document.body;
-  return [...root.querySelectorAll("p")].map(node => cleanText(node.textContent)).filter(Boolean);
+  return window.ReaderContent.extract(html,location.href)?.paragraphs || [];
 }
 async function openArticle(story) {
   if (!story.localOnly && /^https?:/i.test(story.feedUrl || "") && !(articleDialog.open && activeArticleId === story.id)) {
@@ -513,7 +515,8 @@ async function openArticle(story) {
   articleClosing = false;
   articleMotion?.kill();
   story.unread = false; persist(); render();
-  renderArticle(story, Boolean(story.url && !story.fullText && !story.localOnly && !isOffline)); $("#article-dialog").showModal();
+  const shouldFetch=Boolean(story.url && !story.articleHtml && !story.localOnly && !isOffline);
+  renderArticle(story, shouldFetch && !story.fullText); $("#article-dialog").showModal();
   articleDialog.scrollTop = 0;
   if (window.gsap && motionEnabled()) {
     gsap.set($("#article-content"), { clearProps: "opacity,transform" });
@@ -521,12 +524,13 @@ async function openArticle(story) {
       { opacity: 0, y: 26 },
       { opacity: 1, y: 0, duration: .65, ease: "power2.out", clearProps: "opacity,transform" });
   }
-  if (!story.url || story.fullText || isOffline || story.localOnly) return;
+  if (!shouldFetch) return;
+  const fallbackBody=story.feedBody || (story.fullText ? story.body : [story.summary]);
   try {
-    const response = await proxyFetch(story.url); const paragraphs = extractArticleText(response.body);
-    if (paragraphs.length) { story.body = paragraphs; story.fullText = true; persist(); renderArticle(story); }
-    else { story.body = [story.summary, "The original page did not expose enough article text, so this reader kept the feed summary."]; renderArticle(story); }
-  } catch { story.body = [story.summary, "This article could not be refreshed right now. The feed summary remains available offline."]; renderArticle(story); }
+    const response = await proxyFetch(story.url); const article = window.ReaderContent.extract(response.body,response.url);
+    if (article) { story.body=article.paragraphs;story.articleHtml=article.html;story.fullText=true;delete story.readingNotice;persist();renderArticle(story); }
+    else {story.body=fallbackBody;story.readingNotice="A clean article could not be extracted. Showing the feed’s own content instead.";renderArticle(story);}
+  } catch { story.body=fallbackBody;story.readingNotice="The original article is unavailable right now. Showing the feed’s own content instead.";renderArticle(story); }
 }
 function cleanText(value) { return (value || "").replace(/\s+/g, " ").trim(); }
 function firstText(element, selectors) { for (const selector of selectors) { const found = element.querySelector(selector); if (found?.textContent) return cleanText(found.textContent); } return ""; }
@@ -570,6 +574,7 @@ function parseFeed(body, sourceUrl) {
   }).filter(item => item && item.title !== "Untitled story");
   const originalEntries = [...xml.querySelectorAll(isAtom ? "entry" : "item")].slice(0,25);
   entries.forEach(item=>{
+    item.feedBody = [...item.body];
     const index = Number(item.id.slice(item.id.lastIndexOf("-")+1));
     const raw = firstText(originalEntries[index],isAtom ? ["published","updated"] : ["pubDate","dc\\:date"]);
     const timestamp = Date.parse(raw); item.publishedAt = Number.isFinite(timestamp) ? timestamp : 0;

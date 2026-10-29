@@ -1,0 +1,6 @@
+hosted-quiet-web/
+outputs/
+data/
+work/
+.env*
+scripts/test-*
