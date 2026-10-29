@@ -4,6 +4,7 @@ const path = require("node:path");
 const dns = require("node:dns/promises");
 const crypto = require("node:crypto");
 const guards = require("./recommendation-guards.cjs");
+const submissionSecurity = require("./lib/discovery-security.cjs");
 
 const ROOT = __dirname;
 const PORT = Number(process.env.PORT || 4174);
@@ -16,10 +17,10 @@ const MIME_TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascrip
 
 function isPrivateAddress(address) {
   const value = address.toLowerCase();
-  if (value === "::1" || value.startsWith("fe80:") || value.startsWith("fc") || value.startsWith("fd")) return true;
+  if (value.includes(":")) return !/^[23][0-9a-f]{0,3}:/.test(value);
   const parts = value.split(".").map(Number);
   if (parts.length !== 4 || parts.some(Number.isNaN)) return false;
-  return parts[0] === 0 || parts[0] === 10 || parts[0] === 127 || (parts[0] === 169 && parts[1] === 254) || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168);
+  return parts[0]===0||parts[0]===10||parts[0]===127||parts[0]>=224||(parts[0]===100&&parts[1]>=64&&parts[1]<=127)||(parts[0]===169&&parts[1]===254)||(parts[0]===172&&parts[1]>=16&&parts[1]<=31)||(parts[0]===192&&[0,168].includes(parts[1]))||(parts[0]===198&&[18,19,51].includes(parts[1]))||(parts[0]===203&&parts[1]===0);
 }
 
 async function validateRemoteUrl(value) {
@@ -60,6 +61,10 @@ function recommendationsFor(store, followed) {
 
 const server = http.createServer(async (request, response) => {
   const requestUrl = new URL(request.url, `http://${request.headers.host}`);
+  if(requestUrl.pathname.startsWith("/api/discovery/")||requestUrl.pathname==="/api/read-next"){
+    if(!process.env.SUPABASE_URL||!process.env.SUPABASE_SECRET_KEY)return sendJson(response,503,{error:"Set the server's Supabase environment variables to use database-backed anonymous discovery locally."});
+    return require("./api/router.js")(request,response);
+  }
   if (requestUrl.pathname === "/api/views") {
     if (!["GET", "POST"].includes(request.method)) return sendJson(response, 405, { error: "Method not allowed." });
     try {
@@ -151,6 +156,6 @@ const server = http.createServer(async (request, response) => {
 });
 
 if (require.main === module) server.listen(PORT, "127.0.0.1", () => console.log(`Small Web Reader running at http://127.0.0.1:${PORT}`));
-module.exports = { fetchSafely, normalizeFeedUrl };
+module.exports = { fetchSafely, normalizeFeedUrl, validateRemoteUrl };
 let readNextQueue = Promise.resolve();
 function updateReadNext(action) { const result = readNextQueue.then(action); readNextQueue = result.catch(() => {}); return result; }

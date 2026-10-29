@@ -43,10 +43,10 @@ let discoveryOptIn = localStorage.getItem("small-web-discovery-opt-in") === "tru
 let readNextOptIn = localStorage.getItem("quiet-web-read-next") === "true";
 let lastReadFeed = null;
 let readNextRequest = 0;
-function anonymousContributor() {
-  let token = localStorage.getItem("quiet-web-contributor");
-  if (!/^[a-f0-9]{64}$/.test(token || "")) { token = [...crypto.getRandomValues(new Uint8Array(32))].map(n=>n.toString(16).padStart(2,"0")).join(""); localStorage.setItem("quiet-web-contributor",token); }
-  return token;
+try { localStorage.removeItem("quiet-web-contributor"); } catch {}
+async function anonymousSubmissionToken() {
+  const response=await fetch("/api/discovery/token",{cache:"no-store"});const result=await response.json();
+  if(!response.ok)throw Error(result.error||"Could not obtain a submission token.");return result.token;
 }
 const blogViewCounts = new Map();
 const articleDemoViews = new Map();
@@ -100,7 +100,8 @@ async function updateReadNext(story) {
   if (!/^https?:/i.test(current || "")) return;
   try {
     if (readNextOptIn && from && from !== current && !isOffline) {
-      const result = await fetch("/api/read-next", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ from, to: current, contributor:anonymousContributor() }) });
+      const token=await anonymousSubmissionToken();if(!readNextOptIn)return;
+      const result = await fetch("/api/read-next", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ from, to: current, token }) });
       if (!result.ok) throw new Error("Activity could not be shared.");
     }
     if (isOffline) return;
@@ -111,7 +112,7 @@ async function updateReadNext(story) {
     panel.replaceChildren();
     const title = document.createElement("h3"); title.textContent = `Read next after ${story.feed}`; panel.append(title);
     const description = document.createElement("p"); description.className = "helper-text";
-    description.textContent = payload.suggestions.length ? "Based on aggregate blog-to-blog activity, not unique people." : "Not enough supported activity yet. Local rankings require three distinct browser contributions and sufficient weighted support.";
+    description.textContent = payload.suggestions.length ? "Based on anonymous aggregate activity, not unique people." : "Not enough supported activity yet. Rankings require three accepted submissions and sufficient weighted support.";
     panel.append(description);
     payload.suggestions.filter(item => !subscriptionUrls.includes(canonicalFeedUrl(item.url))).forEach(item => {
       const button = document.createElement("button"); button.className = "offline-pill"; button.textContent = `Follow ${item.name} +`;
@@ -617,7 +618,10 @@ async function importFeedFile(file) {
 }
 async function submitAnonymousSubscriptions() {
   if (!discoveryOptIn || !subscriptionUrls.length) return;
-  const response = await fetch("/api/discovery/submit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ feeds: subscriptionUrls.filter(url => /^https?:/i.test(url)).slice(0,30),contributor:anonymousContributor() }) });
+  const token=await anonymousSubmissionToken();if(!discoveryOptIn)return;
+  const batch=subscriptionUrls.filter(url=>/^https?:/i.test(url));
+  if(batch.length>30)throw Error("Sharing supports up to 30 subscriptions per batch; no partial list was submitted.");
+  const response = await fetch("/api/discovery/submit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ feeds:batch,token }) });
   const payload = await response.json(); if (!response.ok) throw new Error(payload.error || "Could not update discovery.");
   recommendations = payload.recommendations?.length ? payload.recommendations : [...starterRecommendations]; renderDiscover();
 }

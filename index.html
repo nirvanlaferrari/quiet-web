@@ -88,7 +88,7 @@
             <summary>Contribute to suggestions <span id="timeline-sharing-summary">Sharing off</span></summary>
             <label class="privacy-choice"><input id="timeline-discovery-opt-in" type="checkbox" /> <span>Share my feed list to help discover similar blogs.</span></label>
             <label class="privacy-choice"><input id="timeline-read-next-opt-in" type="checkbox" /> <span>Share anonymous blog-to-blog “read next” activity.</span></label>
-            <p class="helper-text">Optional. A random browser token deduplicates contributions; local ranking stores hashes scoped to each blog pair, not a cross-blog reading history. Distinct browsers are not distinct people. The server receives network addresses. These choices also apply in Discover.</p>
+            <p class="helper-text">Optional. Each submission uses a fresh, single-use token; no account or persistent browser ID. Rankings count accepted anonymous batches, not unique people. Application rate limits retain only short-lived salted network hashes. Hosting providers may have their own logs.</p>
             <p id="timeline-sharing-status" class="helper-text" role="status"></p>
           </details>
           <div class="filter-row">

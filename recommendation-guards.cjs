@@ -35,6 +35,11 @@ function ranked(store, kind, sources, excluded=[]) {
     results.set(row.target,previous);
   }
   const hostCounts = new Map();
+  if(kind==="pair")for(const [url,popularity]of Object.entries(store.popularity||{})){
+    if(excluded.includes(url)||popularity.count<3||popularity.weight<2)continue;
+    const row=results.get(url)||{url,score:0,distinct:popularity.count,source:"popularity"};
+    row.score=.7*row.score+.3*Math.log1p(popularity.weight);results.set(url,row);
+  }
   return [...results.values()].sort((a,b)=>b.score-a.score || a.url.localeCompare(b.url)).filter(row=> {
     const host = new URL(row.url).hostname, count = hostCounts.get(host)||0;
     if(count >= 2) return false; hostCounts.set(host,count+1); return true;
