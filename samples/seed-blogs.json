@@ -1,0 +1,134 @@
+[
+  {
+    "name": "Squiggle Line Cafe",
+    "url": "https://thesquigglelinecafe.wordpress.com/feed/",
+    "posts": 10,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#f9b89e",
+    "description": "Recent writing from Squiggle Line Cafe.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "WordPress News",
+    "url": "https://wordpress.org/news/feed/",
+    "posts": 10,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#d6ff58",
+    "description": "Recent writing from WordPress News.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "Matt Mullenweg",
+    "url": "https://ma.tt/feed/",
+    "posts": 25,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#b9c8ff",
+    "description": "Recent writing from Matt Mullenweg.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "WordPress.com Blog",
+    "url": "https://wordpress.com/blog/feed/",
+    "posts": 10,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#f9b89e",
+    "description": "Recent writing from WordPress.com Blog.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "Pluralistic",
+    "url": "https://pluralistic.net/feed/",
+    "posts": 25,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#d6ff58",
+    "description": "Recent writing from Pluralistic.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "Austin Kleon",
+    "url": "https://austinkleon.com/feed/",
+    "posts": 10,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#b9c8ff",
+    "description": "Recent writing from Austin Kleon.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "The Marginalian",
+    "url": "https://www.themarginalian.org/feed/",
+    "posts": 20,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#f9b89e",
+    "description": "Recent writing from The Marginalian.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "Mozilla Blog",
+    "url": "https://blog.mozilla.org/en/feed/",
+    "posts": 20,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#d6ff58",
+    "description": "Recent writing from Mozilla Blog.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "WebKit Blog",
+    "url": "https://webkit.org/blog/feed/",
+    "posts": 10,
+    "wordpress": true,
+    "category": "Independent writing",
+    "color": "#f9b89e",
+    "description": "Recent writing from WebKit Blog.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "Schneier on Security",
+    "url": "https://www.schneier.com/feed/atom/",
+    "posts": 10,
+    "wordpress": false,
+    "category": "Independent writing",
+    "color": "#d6ff58",
+    "description": "Recent writing from Schneier on Security.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "Seth's Blog",
+    "url": "https://seths.blog/feed/",
+    "posts": 10,
+    "wordpress": false,
+    "category": "Independent writing",
+    "color": "#b9c8ff",
+    "description": "Recent writing from Seth's Blog.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  },
+  {
+    "name": "WP Tavern",
+    "url": "https://wptavern.com/feed/",
+    "posts": 25,
+    "wordpress": false,
+    "category": "Independent writing",
+    "color": "#e9c4ff",
+    "description": "Recent writing from WP Tavern.",
+    "reason": "Curated starter blog",
+    "status": "pass"
+  }
+]

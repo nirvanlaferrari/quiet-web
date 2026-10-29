@@ -3,6 +3,13 @@
 A browser-first RSS/Atom reader. Run `npm.cmd install` then `npm.cmd start`; production uses Vercel Node functions with Supabase. Set SUPABASE_URL and SUPABASE_SECRET_KEY only in the server environment. Run migrations in supabase/migrations in order. Build: `node scripts/build-vercel.cjs`.
 
 ## Browser/server boundary
+
+## Demo seed data
+`samples/seed-blogs.json` contains 12 real blogs verified through the same fetch proxy and browser parser; WordPress feeds are preferred. `scripts/verify-seed-blogs.cjs` records checks without storing publisher content. `demo-bootstrap.js` loads these as suggestions on a fresh browser; it never auto-subscribes visitors or submits their lists.
+
+Run `supabase/migrations/003_demo_discovery_dataset.sql` once to populate the separate `discovery-demo-v1` dataset. It is synthetic subscription-group evidence for demo availability, not real users or actual engagement. Existing live submissions and view counts are unchanged. The API uses genuine supported results first and demo editorial results only for a cold start. Demo cards never claim measured reader counts. Re-running the SQL does not overwrite an existing seed row.
+
+Verification scripts: test-feed-handling.cjs (generic RSS/Atom/autodiscovery/failure fixtures), verify-live-reader.cjs (read-only live API and three article checks), test-demo-dataset.cjs (seed counts, exclusion and release assets). Reports under outputs are point-in-time evidence. Hidden judges' sites and real-browser offline reload remain unverified until those tests are actually performed. Fresh publishers can still change formats, block requests, or exceed the import size limit later.
 All feed parsing, Readability extraction, DOMPurify sanitization and article caching run in the browser. The fetch proxy transports unparsed text and does not persist content. Supabase stores discovery aggregates, replay protection and counters, never fetched articles.
 
 ## Anonymous discovery protocol

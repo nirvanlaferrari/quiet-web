@@ -20,7 +20,7 @@ function isPrivateAddress(address) {
   if (value.includes(":")) return !/^[23][0-9a-f]{0,3}:/.test(value);
   const parts = value.split(".").map(Number);
   if (parts.length !== 4 || parts.some(Number.isNaN)) return false;
-  return parts[0]===0||parts[0]===10||parts[0]===127||parts[0]>=224||(parts[0]===100&&parts[1]>=64&&parts[1]<=127)||(parts[0]===169&&parts[1]===254)||(parts[0]===172&&parts[1]>=16&&parts[1]<=31)||(parts[0]===192&&[0,168].includes(parts[1]))||(parts[0]===198&&[18,19,51].includes(parts[1]))||(parts[0]===203&&parts[1]===0);
+  return parts[0]===0||parts[0]===10||parts[0]===127||parts[0]>=224||(parts[0]===100&&parts[1]>=64&&parts[1]<=127)||(parts[0]===169&&parts[1]===254)||(parts[0]===172&&parts[1]>=16&&parts[1]<=31)||(parts[0]===192&&parts[1]===168)||(parts[0]===192&&parts[1]===0&&[0,2].includes(parts[2]))||(parts[0]===198&&[18,19].includes(parts[1]))||(parts[0]===198&&parts[1]===51&&parts[2]===100)||(parts[0]===203&&parts[1]===0&&parts[2]===113);
 }
 
 async function validateRemoteUrl(value) {
