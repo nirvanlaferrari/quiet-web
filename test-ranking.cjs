@@ -1,0 +1,13 @@
+const assert=require("node:assert/strict"),g=require("../recommendation-guards.cjs");
+const a="https://a.example/feed",b="https://b.example/feed",store={};
+for(let i=0;i<10;i++)g.record(store,"pair",a,b,"1".repeat(64));
+assert.equal(g.ranked(store,"pair",[a],[a]).length,0);
+g.record(store,"pair",a,b,"2".repeat(64));assert.equal(g.ranked(store,"pair",[a],[a]).length,0);
+g.record(store,"pair",a,b,"3".repeat(64));assert.equal(g.ranked(store,"pair",[a],[a])[0].distinct,3);
+assert.equal(g.ranked(store,"pair",[a],[a,b]).length,0);
+const suspicious={};for(let i=0;i<3;i++)g.record(suspicious,"pair",a,b,String(i).repeat(64),.25);
+assert.equal(g.ranked(suspicious,"pair",[a],[a]).length,0);
+assert(g.batchWeight(Array(10).fill(a),[a,b])<1);
+assert(g.batchWeight([a,b],[a,b])===1);
+assert.throws(()=>g.contributor("invalid"));
+console.log("PASS: duplicate resistance, minimum distinct support, own-feed exclusion, suspicious-weight threshold, token validation");

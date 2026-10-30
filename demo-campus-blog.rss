@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Campus Field Notes</title>
+    <link>https://example.edu/field-notes</link>
+    <description>A tiny sample feed for Small Web Reader.</description>
+    <item>
+      <title>Making room for small ideas</title>
+      <link>https://example.edu/field-notes/small-ideas</link>
+      <guid>campus-field-notes-001</guid>
+      <pubDate>Wed, 29 Oct 2026 09:00:00 GMT</pubDate>
+      <description>Notes from a student writing circle on publishing thoughtful work at a human scale.</description>
+    </item>
+  </channel>
+</rss>
