@@ -1,4 +1,4 @@
-const CACHE="quiet-web-shell-v5";
+const CACHE="quiet-web-shell-v6";
 const FILES=["./","index.html","styles.css","theme.css","entry.css","reader-tools.css","theme.js","app.js","entry.js","glyph-swell.js","reader-tools.js","speech-reader.js","screen-time.js","feed-sync.js","node_modules/gsap/dist/gsap.min.js","node_modules/gsap/dist/ScrollTrigger.min.js"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 FILES.push("feed-tools.js","demo-bootstrap.js","samples/seed-blogs.json","reader-storage.js","reader-extraction.js","node_modules/@mozilla/readability/Readability.js","node_modules/dompurify/dist/purify.min.js");

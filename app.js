@@ -632,6 +632,7 @@ async function submitAnonymousSubscriptions() {
 async function resolveWordPressInput(value) {
   const url = new URL(value);
   if (url.hostname.replace(/^www\./, "") !== "wordpress.com") return value;
+  if (/^\/blog(?:\/|$)/.test(url.pathname)) return value;
   const readerBlog = url.pathname.match(/^\/reader\/blogs\/(\d+)(?:\/posts\/\d+)?\/?$/);
   const readerFeed = url.pathname.match(/^\/reader\/feeds\/(\d+)(?:\/posts?(?:\/[^/]+)?)?\/?$/);
   if (!readerBlog && !readerFeed) throw new Error("Paste the writer’s own website or a WordPress Reader /reader/blogs/… or /reader/feeds/… link. Account profile pages are not blog feeds.");
@@ -639,13 +640,16 @@ async function resolveWordPressInput(value) {
     const endpoint = readerBlog
       ? `https://public-api.wordpress.com/rest/v1.1/sites/${readerBlog[1]}/?fields=URL,name`
       : `https://public-api.wordpress.com/rest/v1.1/read/feed/${readerFeed[1]}`;
-    const response = await proxyFetch(endpoint);
-    const site = JSON.parse(response.body);
+    // This documented public API supports CORS. Call it without credentials;
+    // the publisher proxy continues enforcing robots policy on actual content.
+    const response = await fetch(endpoint, { credentials: "omit", redirect: "error", signal: AbortSignal.timeout(10000), headers: { Accept: "application/json" } });
+    if (!response.ok) throw new Error(`WordPress returned ${response.status}`);
+    const site = await response.json();
     const homepage = new URL(site.URL || site.feed_URL);
-    if (!["http:", "https:"].includes(homepage.protocol) || homepage.hostname.replace(/^www\./, "") === "wordpress.com") throw new Error("Invalid publisher website");
+    if (!["http:", "https:"].includes(homepage.protocol) || homepage.username || homepage.password || homepage.hostname.replace(/^www\./, "") === "wordpress.com") throw new Error("No public publisher website was returned");
     return homepage.toString();
-  } catch {
-    throw new Error("Could not resolve this WordPress Reader link to a public blog. Open ‘Visit site’ in WordPress and paste that website address instead.");
+  } catch (error) {
+    throw new Error(`WordPress Reader lookup failed (${error.message}). Retry, or paste the publisher’s website/feed URL. Private or removed blogs cannot be imported.`);
   }
 }
 async function discoverAndImport(rawUrl) {
@@ -655,7 +659,8 @@ async function discoverAndImport(rawUrl) {
     try { const result = await proxyFetch(candidate); const parsed = parseFeed(result.body, result.url); if (parsed && !parsed.malformed) return { ...parsed, feedUrl: result.url }; } catch { /* Continue to website discovery. */ }
   }
   const initial = await proxyFetch(rawUrl);
-  if (new URL(initial.url).hostname.replace(/^www\./, "") === "wordpress.com") throw new Error("This address redirects to WordPress’s main website. Paste the publisher’s own blog or direct feed URL instead.");
+  const initialUrl = new URL(initial.url);
+  if (initialUrl.hostname.replace(/^www\./, "") === "wordpress.com" && !/^\/blog(?:\/|$)/.test(initialUrl.pathname)) throw new Error("This address redirects to WordPress’s main website. Paste the publisher’s own blog or direct feed URL instead.");
   const directFeed = parseFeed(initial.body, initial.url);
   if (directFeed?.malformed && /xml|rss|atom/i.test(initial.contentType) ) throw new Error("This feed is malformed and could not be read.");
   if (directFeed && !directFeed.malformed) return { ...directFeed, feedUrl: initial.url };
