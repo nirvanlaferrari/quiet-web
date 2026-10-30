@@ -692,7 +692,8 @@ function switchView(view, keepFeed = false) {
   if (!keepFeed && selectedFeed) { selectedFeed = null; render(); }
   $$(".view").forEach(v => v.classList.toggle("active", v.id === `${view}-view`));
   $$(".nav-link").forEach(n => n.classList.toggle("active", n.dataset.view === view));
-  const titles = { home: ["Tuesday, October 29", "Your quiet corner of the web."], discover: ["Follow ideas, not algorithms", "Find your next good read."], library: ["Reading, saved", "Return when you have time."] };
+  const today = new Intl.DateTimeFormat("en-GB", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+  const titles = { home: [today, "Your quiet corner of the web."], discover: ["Follow ideas, not algorithms", "Find your next good read."], library: ["Reading, saved", "Return when you have time."] };
   $("#eyebrow").textContent = titles[view][0]; typePageTitle(titles[view][1]);
   animateEntrance(document.querySelectorAll(`#${view}-view .discover-intro, #${view}-view .library-intro`));
   animateFeedback(document.querySelector(`.nav-link[data-view="${view}"]`));
