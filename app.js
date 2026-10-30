@@ -424,7 +424,7 @@ function cardFor(story) {
   return tpl;
 }
 function renderStories() {
-  const visible = stories.filter(s => (!selectedFeed || s.feed === selectedFeed) && (currentFilter === "all" || (currentFilter === "unread" ? s.unread : s.saved))).sort((a,b)=>(b.publishedAt||0)-(a.publishedAt||0));
+  const visible = stories.filter(s => (!selectedFeed || s.feed === selectedFeed) && (!window.feedMatchesTags||window.feedMatchesTags(s)) && (currentFilter === "all" || (currentFilter === "unread" ? s.unread : s.saved))).sort((a,b)=>(b.publishedAt||0)-(a.publishedAt||0));
   storyList.innerHTML = "";
   if (!visible.length) {
     const empty = document.createElement("div"); empty.className = "empty";
@@ -476,7 +476,7 @@ function renderSaved() {
   });
   refreshScrollMotion();
 }
-function render() { renderStories(); renderSaved(); renderFeeds(); new Set(stories.map(story => story.feedUrl).filter(Boolean)).forEach(feed => loadBlogViews(feed)); }
+function render() { renderStories(); renderSaved(); renderFeeds(); window.renderFeedTools?.();new Set(stories.map(story => story.feedUrl).filter(Boolean)).forEach(feed => loadBlogViews(feed)); }
 function $$(selector) { return [...document.querySelectorAll(selector)]; }
 function escapeHtml(value) { const element = document.createElement("div"); element.textContent = value; return element.innerHTML; }
 function renderArticle(story, loading = false) {
@@ -543,8 +543,11 @@ async function proxyFetch(url, options = {}) {
   if(options.signal?.aborted)controller.abort();
   const timeout = setTimeout(cancel,20000);
   try {
-  const response = await fetch(`/api/fetch?raw=1&url=${encodeURIComponent(url)}`,{signal:controller.signal});
-  if(response.ok && response.headers.has("x-quiet-web-url")) return {url:decodeURIComponent(response.headers.get("x-quiet-web-url")),contentType:decodeURIComponent(response.headers.get("x-quiet-web-type")||""),body:await response.text()};
+  const validators=`${options.etag?"&etag="+encodeURIComponent(options.etag):""}${options.modified?"&modified="+encodeURIComponent(options.modified):""}`;
+  const response = await fetch(`/api/fetch?raw=1&url=${encodeURIComponent(url)}${validators}`,{signal:controller.signal});
+  const metadata={etag:decodeURIComponent(response.headers.get("x-quiet-web-etag")||""),modified:decodeURIComponent(response.headers.get("x-quiet-web-modified")||"")};
+  if(response.status===304)return {notModified:true,...metadata};
+  if(response.ok && response.headers.has("x-quiet-web-url")) return {url:decodeURIComponent(response.headers.get("x-quiet-web-url")),contentType:decodeURIComponent(response.headers.get("x-quiet-web-type")||""),body:await response.text(),...metadata};
   const payload = await response.json();
   if (!response.ok) throw new Error(payload.error || "Could not fetch this website.");
   return payload;
@@ -580,7 +583,8 @@ function parseFeed(body, sourceUrl) {
     const timestamp = Date.parse(raw); item.publishedAt = Number.isFinite(timestamp) ? timestamp : 0;
   });
   if (/wordpress/i.test(firstText(xml, ["generator"]))) entries.forEach(entry => { entry.platform = "WordPress"; });
-  return entries.length ? { title, entries } : null;
+  const siteUrl=isAtom ? [...xml.querySelectorAll("feed > link")].find(node=>!node.getAttribute("rel")||node.getAttribute("rel")==="alternate")?.getAttribute("href") : firstText(xml,["channel > link"]);
+  return entries.length ? { title, entries,siteUrl:siteUrl?new URL(siteUrl,sourceUrl).href:undefined } : null;
 }
 function canonicalFeedUrl(value) {
   const url = new URL(value); url.hash = "";
@@ -601,8 +605,9 @@ async function saveImportedFeed(imported, canonicalUrl) {
   imported.entries.forEach(entry => { const previous = previousById.get(entry.id); if (previous) { entry.saved = previous.saved; entry.unread = previous.unread; entry.body = previous.body; entry.fullText = previous.fullText; } entry.feedUrl = canonicalUrl; });
   stories = [...imported.entries, ...stories.filter(story => !imported.entries.some(entry => entry.id === story.id))];
   subscriptionUrls.push(canonicalUrl); persist(); render();
+  window.detectQuietBlogroll?.(imported,canonicalUrl);
   renderDiscover();
-  if (discoveryOptIn && /^https?:/i.test(canonicalUrl)) submitAnonymousSubscriptions().catch(() => { $("#discovery-status").textContent = "Blog added. Optional discovery sharing could not complete."; });
+  if (discoveryOptIn && !window.quietBulkImport && /^https?:/i.test(canonicalUrl)) submitAnonymousSubscriptions().catch(() => { $("#discovery-status").textContent = "Blog added. Optional discovery sharing could not complete."; });
   return imported;
 }
 async function importFeedFile(file) {

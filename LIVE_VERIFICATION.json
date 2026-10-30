@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-10-29T23:59:37.233Z",
+  "reports": [
+    {
+      "blog": "Squiggle Line Cafe",
+      "feed": "https://thesquigglelinecafe.wordpress.com/feed/",
+      "article": "https://thesquigglelinecafe.wordpress.com/2026/10/29/i-want-candy-%f0%9f%8d%ac/",
+      "extraction": "pass",
+      "paragraphs": 28
+    },
+    {
+      "blog": "WordPress News",
+      "feed": "https://wordpress.org/news/feed/",
+      "article": "https://wordpress.org/news/2026/10/wordpress-7-1-4/",
+      "extraction": "pass",
+      "paragraphs": 23
+    },
+    {
+      "blog": "Matt Mullenweg",
+      "feed": "https://ma.tt/feed/",
+      "article": "https://ma.tt/2026/10/anthropic-employment/",
+      "extraction": "pass",
+      "paragraphs": 2
+    },
+    {
+      "endpoint": "/api/views?feed=https%3A%2F%2Fexample.com%2Ffeed",
+      "status": 200,
+      "keys": [
+        "feed",
+        "count"
+      ]
+    },
+    {
+      "endpoint": "/api/discovery/popular",
+      "status": 200,
+      "keys": [
+        "feeds"
+      ]
+    }
+  ]
+}

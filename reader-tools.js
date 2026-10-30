@@ -1,6 +1,7 @@
 // Editorial discovery explanations and device-local article annotations.
 (() => {
   window.recommendationWhy = (item, index = 0, source) => {
+    if(item.provenance==="blogroll")return `Why this? ${item.reason}`;
     if (item.provenance === "aggregate") return `Why this? ${item.reason}`;
     const reference = source || selectedFeed || feeds.find(name => name !== item.name);
     const topic = item.category || "independent writing";
@@ -81,8 +82,8 @@
   ];
   function createGraph(story) {
     const section = element("section", "similar-blogs"); section.hidden = true;
-    section.append(element("p", "eyebrow", "Your next reading trail"), element("h2", "", "Blogs like this"), element("p", "helper-text", "Explore editorial picks around this read. Choose a blog to see why it is included."));
-    const choices = [...recommendations, ...fallback].filter((item, i, all) => item.name !== story.feed && item.url !== story.feedUrl && all.findIndex(other => other.url === item.url) === i).slice(0,4);
+    section.append(element("p", "eyebrow", "Your next reading trail"), element("h2", "", "Blogs like this"), element("p", "helper-text", "Detected blogroll links and editorial suggestions. Choose a blog to see why it is included."));
+    const choices = [...(window.blogrollChoices?.(story)||[]),...recommendations, ...fallback].filter((item, i, all) => item.name !== story.feed && item.url !== story.feedUrl && all.findIndex(other => other.url === item.url) === i).slice(0,4);
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 640 320"); svg.setAttribute("aria-hidden", "true"); svg.classList.add("blog-graph");
     function shape(tag, attributes, text) {
       const node = document.createElementNS(svg.namespaceURI, tag);
@@ -157,11 +158,12 @@
     const footer = element("div", "reading-finish");
     footer.append(element("p", "eyebrow", "A little further down the rabbit hole"));
     const finished = element("button", "primary-button", "Finished reading · Blogs like this ↗"); finished.type = "button"; finished.setAttribute("aria-expanded","false");
-    const graph = createGraph(story);
+    let graph = null;
     finished.onclick = () => {
+      if(!graph){graph=createGraph(story);host.append(graph);}
       graph.hidden = !graph.hidden; finished.setAttribute("aria-expanded",String(!graph.hidden));
       if (!graph.hidden) { graph.scrollIntoView({behavior:motionEnabled()?"smooth":"auto",block:"start"}); animateEntrance(graph); }
     };
-    footer.append(finished); host.append(footer,graph);
+    footer.append(finished); host.append(footer);
   };
 })();

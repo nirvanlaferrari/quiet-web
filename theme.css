@@ -1,4 +1,13 @@
 /* All dark colors are opt-in overrides. styles.css retains the original design. */
+.feed-tools { border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:28px; }
+.feed-tools label { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin:14px 0; font-size:12px; }
+.feed-tools input:not([type=checkbox]), .feed-tools select { max-width:100%; padding:9px; background:var(--paper); color:var(--ink); border:1px solid var(--line); border-radius:6px; }
+.feed-tool-actions { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.feed-tools .helper-text { line-height:1.6; overflow-wrap:anywhere; }
+.opml-preview { max-height:85dvh; overflow:auto; }
+.opml-preview label { display:flex; gap:10px; align-items:center; margin:10px 0; overflow-wrap:anywhere; }
+.opml-preview input { width:auto; margin:0; }
+.opml-preview button { margin:16px 12px 0 0; }
 .article-copy img { max-width:100%; height:auto; border-radius:8px; }
 .article-copy a { color:var(--ink); text-decoration-color:var(--coral); text-underline-offset:3px; }
 .article-copy h2,.article-copy h3 { line-height:1.2; margin:1.5em 0 .6em; }

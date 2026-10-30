@@ -32,21 +32,27 @@ async function validateRemoteUrl(value) {
   return url;
 }
 
-async function fetchSafely(rawUrl, redirectsLeft = 3) {
+async function fetchSafely(rawUrl, redirectsLeft = 3, validators = {}) {
   const url = await validateRemoteUrl(rawUrl);
+  await require("./lib/robots-policy.cjs").check(url,validateRemoteUrl);
+  const headers={"User-Agent":"QuietWebReader/1.0"};
+  if(validators.etag){if(validators.etag.length>512||/[\r\n]/.test(validators.etag))throw Error("Invalid ETag.");headers["If-None-Match"]=validators.etag;}
+  if(validators.modified){if(validators.modified.length>128||/[\r\n]/.test(validators.modified))throw Error("Invalid modification date.");headers["If-Modified-Since"]=validators.modified;}
   let response;
-  try { response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(12000), headers: { "User-Agent": "SmallWebReader/0.1 (+local development)" } }); }
+  try { response = await fetch(url, { redirect: "manual", signal: AbortSignal.timeout(12000), headers }); }
   catch (error) { if (error.name === "TimeoutError" || error.name === "AbortError") throw new Error("This website took too long to respond. Please try again later."); throw new Error("We could not reach this website right now."); }
   if ([301, 302, 303, 307, 308].includes(response.status)) {
     if (!redirectsLeft || !response.headers.get("location")) throw new Error("Too many redirects.");
-    return fetchSafely(new URL(response.headers.get("location"), url).toString(), redirectsLeft - 1);
+    return fetchSafely(new URL(response.headers.get("location"), url).toString(), redirectsLeft - 1,validators);
   }
+  const metadata={etag:response.headers.get("etag")||"",modified:response.headers.get("last-modified")||""};
+  if(response.status===304)return {url:response.url||url.href,body:"",contentType:"",notModified:true,...metadata};
   if (!response.ok) throw new Error(`The site responded with ${response.status}.`);
   const contentLength = Number(response.headers.get("content-length") || 0);
   if (contentLength > MAX_RESPONSE_BYTES) throw new Error("The response is too large to import.");
   const body = await response.text();
   if (Buffer.byteLength(body) > MAX_RESPONSE_BYTES) throw new Error("The response is too large to import.");
-  return { url: response.url, contentType: response.headers.get("content-type") || "", body };
+  return { url: response.url, contentType: response.headers.get("content-type") || "", body,...metadata };
 }
 
 function sendJson(response, status, body) { response.writeHead(status, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" }); response.end(JSON.stringify(body)); }
@@ -122,7 +128,9 @@ const server = http.createServer(async (request, response) => {
   if (requestUrl.pathname === "/api/fetch") {
     if (request.method !== "GET") return sendJson(response, 405, { error: "Method not allowed." });
     try {
-      const result = await fetchSafely(requestUrl.searchParams.get("url") || "");
+      const result = await fetchSafely(requestUrl.searchParams.get("url") || "",3,{etag:requestUrl.searchParams.get("etag"),modified:requestUrl.searchParams.get("modified")});
+      if(result.etag)response.setHeader("X-Quiet-Web-ETag",encodeURIComponent(result.etag));if(result.modified)response.setHeader("X-Quiet-Web-Modified",encodeURIComponent(result.modified));
+      if(result.notModified){response.writeHead(304,{"cache-control":"no-store"});return response.end();}
       if(requestUrl.searchParams.get("raw") === "1") {
         response.writeHead(200,{"content-type":"text/plain; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff","x-quiet-web-url":encodeURIComponent(result.url),"x-quiet-web-type":encodeURIComponent(result.contentType)});
         return response.end(result.body);

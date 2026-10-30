@@ -4,6 +4,23 @@ A browser-first RSS/Atom reader. Run `npm.cmd install` then `npm.cmd start`; pro
 
 ## Browser/server boundary
 
+## Extended feature checklist
+- Transparent reasons: aggregate cards identify a supporting publisher/pairing or popularity; blogroll-boosted results name the submitted source. Editorial/demo picks never claim measured feedback.
+- Ranking safeguards: signed single-use tokens, bounded input, minimum three accepted batches and weighted support >=2, large/repetitive batch downweighting, logarithmic popularity/co-subscription score and hostname diversity. Batches do not prove unique people.
+- Background feed refresh: foreground-online 15-minute refresh, timeout/backoff, no read-state or full-text loss.
+- Conditional requests: browser stores ETag/Last-Modified in `quiet-web-feed-sync`; proxy forwards If-None-Match/If-Modified-Since and returns 304 metadata. Unchanged content is not reparsed or reimported.
+- robots.txt: proxy uses robots-parser for QuietWebReader, follows validated redirects, respects path rules, permits unavailable 4xx policy files, and refuses fetching while robots policy is unreachable/5xx. Policy retrieval is bounded. Robots rules are policy data, not server-side feed/article parsing. Rules are fetched per request rather than storing publisher pages. See RFC 9309 and RFC 9110.
+- OPML: Library imports XML under 2 MB, rejects DOCTYPE/entity declarations, supports nested folder labels, deduplicates URLs, previews selectable feeds and imports sequentially (cap 100). Existing feeds are not duplicated. Individual failures are reported. Export includes public subscriptions and tags using XML serialization; no article/highlight backup is implied. Optional sharing is suppressed during bulk imports and attempted once afterward.
+- Feed tags: Library → Subscriptions & organisation. Select feed, set comma-separated tags, Save; Timeline has an All tags filter. Tags stay local and round-trip through OPML category attributes.
+- Blogrolls: browser scans explicit `.blogroll`, `.linkcat`, `#blogroll` and friend/colleague links on the publisher homepage after follow or Library re-scan. Local detections persist. A separate opt-in plus Submit sends at most 20 A→B edges with a single-use token to POST /api/discovery/blogroll. The server validates URLs and unions at most 100 outgoing edges per publisher. Repeated identical edges do not add score. Eligible ranked targets gain a bounded .15 boost from a matching followed source.
+- Graph: article completion opens the accessible SVG/HTML graph, prioritizing detected blogroll neighbours, then aggregate/editorial suggestions. Reasons reveal provenance. Follow uses the real importer.
+
+Blogroll threat-model addition: client-submitted links are claims, not proof that the submitter owns A or that A actually links to B. The server deliberately does not parse publisher HTML. Link influence is small, cannot bypass minimum real submission support, and repeated same-source edges do not multiply it. Determined attackers can still forge multiple public source domains; independent verification/moderation would be required for a large public launch. LocalStorage contains tag/link preferences, not user IDs. Source URLs are public blog identities, not persistent reader identities.
+
+New check: `node scripts/test-final-features.cjs`; full DOM harness: `node scripts/test-app-boot.cjs`. These do not substitute for real voice playback, real-browser service-worker offline reload, or unknown judging sites. No new database migration is required for edges/tags/OPML/validators, since the aggregate state table already stores structured JSON. Previously supplied privacy/seed migrations still apply if not already run.
+
+Standards: https://2005.opml.org/spec2.html, https://www.rfc-editor.org/rfc/rfc9309, https://www.rfc-editor.org/rfc/rfc9110.
+
 ## Demo seed data
 `samples/seed-blogs.json` contains 12 real blogs verified through the same fetch proxy and browser parser; WordPress feeds are preferred. `scripts/verify-seed-blogs.cjs` records checks without storing publisher content. `demo-bootstrap.js` loads these as suggestions on a fresh browser; it never auto-subscribes visitors or submits their lists.
 

@@ -14,7 +14,8 @@
         if(Date.now()-(state.at||0)<Math.min(6*3600000,INTERVAL*2**(state.failures||0)))continue;
         abort=new AbortController(); const timeout=setTimeout(()=>abort?.abort(),20000);
         try {
-          const response=await proxyFetch(feed,{signal:abort.signal});
+          const response=await proxyFetch(feed,{signal:abort.signal,etag:state.etag,modified:state.modified});
+          if(response.notModified){metadata[feed]={...state,at:Date.now(),failures:0};continue;}
           const parsed=parseFeed(response.body,response.url);
           if(!parsed || parsed.malformed)throw Error("Feed is not readable.");
           if(!online() || !subscriptionUrls.includes(feed))continue;
@@ -29,7 +30,7 @@
             } else if(!added.some(story=>story.url===incoming.url)) added.push({...incoming,feed:name,feedUrl:feed});
           }
           stories=[...added,...stories]; if(!feeds.includes(name))feeds.push(name);
-          metadata[feed]={at:Date.now(),failures:0}; persist(); render();
+          metadata[feed]={at:Date.now(),failures:0,etag:response.etag,modified:response.modified}; persist(); render();
         } catch(error) {
           if(online())metadata[feed]={at:Date.now(),failures:Math.min(5,(state.failures||0)+1),error:error.message};
         } finally {clearTimeout(timeout);abort=null;save();}
