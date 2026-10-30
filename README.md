@@ -4,6 +4,10 @@
 
 A browser-first RSS/Atom reader with a unified timeline, full-text reading, local offline caches and optional anonymous discovery. Stack: HTML/CSS/JavaScript, GSAP, Node.js, Vercel and Supabase.
 
+## Project Demo Video
+
+[Watch the Quiet Web project video — PECathon, Team Byte Me](https://drive.google.com/file/d/1fRfAqTemrocAitIEepaGSSlBed4whBwi/view?usp=drive_link)
+
 ## 1. Architecture Overview
 
 ```mermaid
